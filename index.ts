@@ -2,17 +2,17 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
-import authRoutes from './routes/auth';
-import productRoutes from './routes/products';
-import orderRoutes from './routes/orders';
-import userRoutes from './routes/users';
-import categoryRoutes from './routes/categories';
-import paypalRoutes from './routes/paypal';
-import couponRoutes from './routes/coupons';
-import wishlistRoutes from './routes/wishlist';
-import reviewRoutes from './routes/reviews';
-import pincodeRoutes from './routes/pincodes';
-import blogRoutes from './routes/blogs';
+import authRoutes from './routes/auth.js';
+import productRoutes from './routes/products.js';
+import orderRoutes from './routes/orders.js';
+import userRoutes from './routes/users.js';
+import categoryRoutes from './routes/categories.js';
+import paypalRoutes from './routes/paypal.js';
+import couponRoutes from './routes/coupons.js';
+import wishlistRoutes from './routes/wishlist.js';
+import reviewRoutes from './routes/reviews.js';
+import pincodeRoutes from './routes/pincodes.js';
+import blogRoutes from './routes/blogs.js';
 
 dotenv.config();
 

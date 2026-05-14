@@ -1,6 +1,6 @@
 import express from 'express';
-import Category from '../models/Category';
-import { authenticate, authorize, AuthRequest } from '../middleware/auth';
+import Category from '../models/Category.js';
+import { authenticate, authorize, AuthRequest } from '../middleware/auth.js';
 
 const router = express.Router();
 

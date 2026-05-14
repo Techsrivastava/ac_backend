@@ -1,6 +1,6 @@
 import express from 'express';
-import Pincode from '../models/Pincode';
-import { authenticate, authorize } from '../middleware/auth';
+import Pincode from '../models/Pincode.js';
+import { authenticate, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
 

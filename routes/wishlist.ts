@@ -1,7 +1,7 @@
 import express from 'express';
-import Wishlist from '../models/Wishlist';
-import Product from '../models/Product';
-import { authenticate } from '../middleware/auth';
+import Wishlist from '../models/Wishlist.js';
+import Product from '../models/Product.js';
+import { authenticate } from '../middleware/auth.js';
 
 const router = express.Router();
 

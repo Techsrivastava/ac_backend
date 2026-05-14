@@ -1,5 +1,5 @@
 import express from 'express';
-import { authenticate, AuthRequest } from '../middleware/auth';
+import { authenticate, AuthRequest } from '../middleware/auth.js';
 
 const router = express.Router();
 
