@@ -2,16 +2,18 @@ import express from 'express';
 
 const router = express.Router();
 
-const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID!;
-const PAYPAL_CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET!;
-const PAYPAL_MODE = process.env.PAYPAL_MODE || 'sandbox';
-const PAYPAL_BASE_URL = PAYPAL_MODE === 'live'
-  ? 'https://api-m.paypal.com'
-  : 'https://api-m.sandbox.paypal.com';
+function getPayPalBaseUrl(): string {
+  const mode = process.env.PAYPAL_MODE || 'sandbox';
+  return mode === 'live' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com';
+}
+
+const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID || 'ARXtn1vEQf6ZuOY-N0y6HSoQ7IjkEOrEdnyteXwk_0PmuJfdc5xJ2C49TxR0VJAU71xOb9n8kTyzTtBD';
+const PAYPAL_CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET || 'EJY0jWl4F_wwstSEOm3dZ3hZV_Wh_vpDkCDWtRXpTPpg1IA0jlR3D_YY1Vx-bKrABexrgyzpWPkaHV-8';
 
 async function getPayPalAccessToken(): Promise<string> {
+  const baseUrl = getPayPalBaseUrl();
   const auth = Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`).toString('base64');
-  const res = await fetch(`${PAYPAL_BASE_URL}/v1/oauth2/token`, {
+  const res = await fetch(`${baseUrl}/v1/oauth2/token`, {
     method: 'POST',
     headers: {
       Authorization: `Basic ${auth}`,
@@ -32,7 +34,7 @@ router.post('/create-order', async (req, res) => {
     const { amount, currency = 'EUR' } = req.body;
     const accessToken = await getPayPalAccessToken();
 
-    const response = await fetch(`${PAYPAL_BASE_URL}/v2/checkout/orders`, {
+    const response = await fetch(`${getPayPalBaseUrl()}/v2/checkout/orders`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -53,9 +55,9 @@ router.post('/create-order', async (req, res) => {
 
     const order = await response.json();
     res.json(order);
-  } catch (error) {
-    console.error('PayPal create-order error:', error);
-    res.status(500).json({ error: 'Failed to create PayPal order' });
+  } catch (error: any) {
+    console.error('PayPal create-order error:', error?.message || error);
+    res.status(500).json({ error: error?.message || 'Failed to create PayPal order' });
   }
 });
 
@@ -65,7 +67,7 @@ router.post('/capture-order', async (req, res) => {
     const { orderID } = req.body;
     const accessToken = await getPayPalAccessToken();
 
-    const response = await fetch(`${PAYPAL_BASE_URL}/v2/checkout/orders/${orderID}/capture`, {
+    const response = await fetch(`${getPayPalBaseUrl()}/v2/checkout/orders/${orderID}/capture`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -75,15 +77,15 @@ router.post('/capture-order', async (req, res) => {
 
     const capture = await response.json();
     res.json(capture);
-  } catch (error) {
-    console.error('PayPal capture-order error:', error);
-    res.status(500).json({ error: 'Failed to capture PayPal payment' });
+  } catch (error: any) {
+    console.error('PayPal capture-order error:', error?.message || error);
+    res.status(500).json({ error: error?.message || 'Failed to capture PayPal payment' });
   }
 });
 
 // Get PayPal client ID (for frontend SDK)
 router.get('/client-id', (req, res) => {
-  res.json({ clientId: PAYPAL_CLIENT_ID, mode: PAYPAL_MODE });
+  res.json({ clientId: process.env.PAYPAL_CLIENT_ID, mode: process.env.PAYPAL_MODE || 'sandbox' });
 });
 
 export default router;
