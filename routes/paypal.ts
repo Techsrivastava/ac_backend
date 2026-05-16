@@ -3,27 +3,57 @@ import { authenticate, AuthRequest } from '../middleware/auth.js';
 
 const router = express.Router();
 
+const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID!;
+const PAYPAL_CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET!;
+const PAYPAL_MODE = process.env.PAYPAL_MODE || 'sandbox';
+const PAYPAL_BASE_URL = PAYPAL_MODE === 'live'
+  ? 'https://api-m.paypal.com'
+  : 'https://api-m.sandbox.paypal.com';
+
+async function getPayPalAccessToken(): Promise<string> {
+  const auth = Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`).toString('base64');
+  const res = await fetch(`${PAYPAL_BASE_URL}/v1/oauth2/token`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Basic ${auth}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: 'grant_type=client_credentials',
+  });
+  const data = await res.json() as { access_token: string };
+  return data.access_token;
+}
+
 // Create PayPal order
 router.post('/create-order', authenticate, async (req: AuthRequest, res) => {
   try {
-    const { amount } = req.body;
-    
-    // In production, you would use the PayPal SDK here
-    // For now, returning a mock response
-    const mockOrder = {
-      id: `ORDER-${Date.now()}`,
-      status: 'CREATED',
-      links: [
-        {
-          rel: 'approve',
-          href: `https://www.sandbox.paypal.com/checkoutnow?token=ORDER-${Date.now()}`
-        }
-      ]
-    };
-    
-    res.json(mockOrder);
+    const { amount, currency = 'EUR' } = req.body;
+    const accessToken = await getPayPalAccessToken();
+
+    const response = await fetch(`${PAYPAL_BASE_URL}/v2/checkout/orders`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        intent: 'CAPTURE',
+        purchase_units: [
+          {
+            amount: {
+              currency_code: currency,
+              value: parseFloat(amount).toFixed(2),
+            },
+          },
+        ],
+      }),
+    });
+
+    const order = await response.json();
+    res.json(order);
   } catch (error) {
-    res.status(500).json({ error: 'Server error' });
+    console.error('PayPal create-order error:', error);
+    res.status(500).json({ error: 'Failed to create PayPal order' });
   }
 });
 
@@ -31,34 +61,27 @@ router.post('/create-order', authenticate, async (req: AuthRequest, res) => {
 router.post('/capture-order', authenticate, async (req: AuthRequest, res) => {
   try {
     const { orderID } = req.body;
-    
-    // In production, you would use the PayPal SDK to capture the payment
-    // For now, returning a mock response
-    const mockCapture = {
-      id: orderID,
-      status: 'COMPLETED',
-      purchase_units: [
-        {
-          payments: {
-            captures: [
-              {
-                id: `CAPTURE-${Date.now()}`,
-                status: 'COMPLETED',
-                amount: {
-                  currency_code: 'USD',
-                  value: req.body.amount
-                }
-              }
-            ]
-          }
-        }
-      ]
-    };
-    
-    res.json(mockCapture);
+    const accessToken = await getPayPalAccessToken();
+
+    const response = await fetch(`${PAYPAL_BASE_URL}/v2/checkout/orders/${orderID}/capture`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const capture = await response.json();
+    res.json(capture);
   } catch (error) {
-    res.status(500).json({ error: 'Server error' });
+    console.error('PayPal capture-order error:', error);
+    res.status(500).json({ error: 'Failed to capture PayPal payment' });
   }
+});
+
+// Get PayPal client ID (for frontend SDK)
+router.get('/client-id', (req, res) => {
+  res.json({ clientId: PAYPAL_CLIENT_ID, mode: PAYPAL_MODE });
 });
 
 export default router;
