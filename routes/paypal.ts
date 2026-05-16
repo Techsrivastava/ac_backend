@@ -19,7 +19,10 @@ async function getPayPalAccessToken(): Promise<string> {
     },
     body: 'grant_type=client_credentials',
   });
-  const data = await res.json() as { access_token: string };
+  const data = await res.json() as { access_token?: string; error?: string; error_description?: string };
+  if (!res.ok || !data.access_token) {
+    throw new Error(data.error_description || data.error || 'PayPal auth failed');
+  }
   return data.access_token;
 }
 
