@@ -1,5 +1,4 @@
 import express from 'express';
-import { authenticate, AuthRequest } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -24,8 +23,8 @@ async function getPayPalAccessToken(): Promise<string> {
   return data.access_token;
 }
 
-// Create PayPal order
-router.post('/create-order', authenticate, async (req: AuthRequest, res) => {
+// Create PayPal order (no auth required - PayPal handles payment security)
+router.post('/create-order', async (req, res) => {
   try {
     const { amount, currency = 'EUR' } = req.body;
     const accessToken = await getPayPalAccessToken();
@@ -58,7 +57,7 @@ router.post('/create-order', authenticate, async (req: AuthRequest, res) => {
 });
 
 // Capture PayPal payment
-router.post('/capture-order', authenticate, async (req: AuthRequest, res) => {
+router.post('/capture-order', async (req, res) => {
   try {
     const { orderID } = req.body;
     const accessToken = await getPayPalAccessToken();
