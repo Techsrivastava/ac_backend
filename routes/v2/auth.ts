@@ -1,10 +1,12 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { prisma } from '../../lib/prisma.js';
-import { authenticate } from '../../middleware/auth.js';
+import { prisma } from '../../src/lib/prisma.js';
+import { authenticate } from '../../src/middleware/auth.js';
+import { env } from '../../src/config/env.js';
+import { ApiError } from '../../src/utils/ApiError.js';
+import { asyncHandler } from '../../src/utils/asyncHandler.js';
 const router = Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 // Register
 router.post('/register', async (req, res) => {

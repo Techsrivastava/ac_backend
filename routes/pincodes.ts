@@ -1,85 +1,71 @@
-import express from 'express';
-import Pincode from '../models/Pincode.js';
-import { authenticate, authorize } from '../middleware/auth.js';
+import { Router } from 'express';
+import { prisma } from '../src/lib/prisma.js';
+import { authenticate, authorize } from '../src/middleware/auth.js';
+import { ApiError } from '../src/utils/ApiError.js';
+import { asyncHandler } from '../src/utils/asyncHandler.js';
 
-const router = express.Router();
+const router = Router();
 
 // Check pincode availability
-router.get('/check/:pincode', async (req, res) => {
-  try {
-    const pincode = await Pincode.findOne({ pincode: req.params.pincode });
-    
-    if (!pincode) {
-      return res.json({ 
-        available: false, 
-        message: 'Delivery not available for this pincode' 
-      });
-    }
+router.get('/check/:pincode', asyncHandler(async (req, res) => {
+  const pincode = await prisma.pincode.findUnique({
+    where: { pincode: req.params.pincode }
+  });
 
-    if (!pincode.available) {
-      return res.json({ 
-        available: false, 
-        message: 'Delivery temporarily unavailable for this pincode' 
-      });
-    }
-
-    res.json({
-      available: true,
-      city: pincode.city,
-      state: pincode.state,
-      deliveryDays: pincode.deliveryDays,
-      message: `Delivery available in ${pincode.deliveryDays} days`
+  if (!pincode) {
+    return res.json({
+      success: true,
+      available: false,
+      message: 'Delivery not available for this pincode'
     });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to check pincode' });
   }
-});
+
+  if (!pincode.isServiceable) {
+    return res.json({
+      success: true,
+      available: false,
+      message: 'Delivery temporarily unavailable for this pincode'
+    });
+  }
+
+  res.json({
+    success: true,
+    available: true,
+    city: pincode.city,
+    state: pincode.state,
+    deliveryDays: pincode.deliveryDays,
+    shippingCharge: pincode.shippingCharge,
+    message: `Delivery available in ${pincode.deliveryDays} days`
+  });
+}));
 
 // Get all pincodes (admin only)
-router.get('/', authenticate, authorize('admin', 'super_admin'), async (req, res) => {
-  try {
-    const pincodes = await Pincode.find().sort({ pincode: 1 });
-    res.json(pincodes);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch pincodes' });
-  }
-});
+router.get('/', authenticate, authorize('admin', 'super_admin'), asyncHandler(async (req, res) => {
+  const pincodes = await prisma.pincode.findMany({
+    orderBy: { pincode: 'asc' }
+  });
+  res.json({ success: true, data: pincodes });
+}));
 
 // Add pincode (admin only)
-router.post('/', authenticate, authorize('admin', 'super_admin'), async (req, res) => {
-  try {
-    const pincode = new Pincode(req.body);
-    await pincode.save();
-    res.status(201).json(pincode);
-  } catch (error) {
-    res.status(400).json({ error: 'Failed to add pincode' });
-  }
-});
+router.post('/', authenticate, authorize('admin', 'super_admin'), asyncHandler(async (req, res) => {
+  const pincode = await prisma.pincode.create({ data: req.body });
+  res.status(201).json({ success: true, data: pincode });
+}));
 
 // Update pincode (admin only)
-router.put('/:id', authenticate, authorize('admin', 'super_admin'), async (req, res) => {
-  try {
-    const pincode = await Pincode.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    if (!pincode) {
-      return res.status(404).json({ error: 'Pincode not found' });
-    }
-    res.json(pincode);
-  } catch (error) {
-    res.status(400).json({ error: 'Failed to update pincode' });
-  }
-});
+router.put('/:id', authenticate, authorize('admin', 'super_admin'), asyncHandler(async (req, res) => {
+  const pincode = await prisma.pincode.update({
+    where: { id: req.params.id },
+    data: req.body
+  });
+  res.json({ success: true, data: pincode });
+}));
 
 // Delete pincode (admin only)
-router.delete('/:id', authenticate, authorize('admin', 'super_admin'), async (req, res) => {
-  try {
-    const pincode = await Pincode.findByIdAndDelete(req.params.id);
-    if (!pincode) {
-      return res.status(404).json({ error: 'Pincode not found' });
-    }
-    res.json({ message: 'Pincode deleted successfully' });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to delete pincode' });
-  }
-});
+router.delete('/:id', authenticate, authorize('admin', 'super_admin'), asyncHandler(async (req, res) => {
+  await prisma.pincode.delete({ where: { id: req.params.id } });
+  res.json({ success: true, message: 'Pincode deleted successfully' });
+}));
 
 export default router;

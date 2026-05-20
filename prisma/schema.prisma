@@ -1,10 +1,10 @@
 generator client {
   provider = "prisma-client-js"
+  engineType = "binary"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -88,6 +88,12 @@ model Product {
   reviews          Review[]
   wishlists        Wishlist[]
 
+  @@index([categoryId])
+  @@index([isActive])
+  @@index([isFeatured])
+  @@index([brand])
+  @@index([createdAt])
+  @@index([price])
   @@map("products")
 }
 
@@ -160,6 +166,11 @@ model Blog {
   author          User       @relation(fields: [authorId], references: [id])
   images          BlogImage[]
 
+  @@index([authorId])
+  @@index([status])
+  @@index([isFeatured])
+  @@index([category])
+  @@index([createdAt])
   @@map("blogs")
 }
 
@@ -205,6 +216,11 @@ model Order {
   user            User?       @relation(fields: [userId], references: [id])
   items           OrderItem[]
 
+  @@index([userId])
+  @@index([status])
+  @@index([paymentStatus])
+  @@index([createdAt])
+  @@index([orderNumber])
   @@map("orders")
 }
 

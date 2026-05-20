@@ -1,105 +1,128 @@
-import express from 'express';
-import Review from '../models/Review.js';
-import Order from '../models/Order.js';
-import { authenticate } from '../middleware/auth.js';
+import { Router } from 'express';
+import { prisma } from '../src/lib/prisma.js';
+import { authenticate } from '../src/middleware/auth.js';
+import { AuthRequest } from '../src/types/index.js';
+import { ApiError } from '../src/utils/ApiError.js';
+import { asyncHandler } from '../src/utils/asyncHandler.js';
 
-const router = express.Router();
+const router = Router();
 
 // Get reviews for a product
-router.get('/product/:productId', async (req, res) => {
-  try {
-    const reviews = await Review.find({ product: req.params.productId })
-      .populate('user', 'name email')
-      .sort({ createdAt: -1 });
-    
-    const avgRating = reviews.length > 0
-      ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
-      : 0;
-    
-    res.json({ reviews, avgRating });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch reviews' });
-  }
-});
+router.get('/product/:productId', asyncHandler(async (req, res) => {
+  const reviews = await prisma.review.findMany({
+    where: { productId: req.params.productId, isApproved: true },
+    include: {
+      user: { select: { id: true, name: true, avatarUrl: true } },
+      images: true
+    },
+    orderBy: { createdAt: 'desc' }
+  });
+
+  const avgRating = reviews.length > 0
+    ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+    : 0;
+
+  res.json({
+    success: true,
+    data: { reviews, avgRating, total: reviews.length }
+  });
+}));
 
 // Get user's reviews
-router.get('/user', authenticate, async (req, res) => {
-  try {
-    const userId = (req as any).user._id;
-    const reviews = await Review.find({ user: userId })
-      .populate('product', 'name images')
-      .sort({ createdAt: -1 });
-    
-    res.json(reviews);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch user reviews' });
-  }
-});
+router.get('/user', authenticate, asyncHandler(async (req: AuthRequest, res) => {
+  const reviews = await prisma.review.findMany({
+    where: { userId: req.user!.id },
+    include: {
+      product: {
+        select: { id: true, name: true, slug: true, images: { where: { isPrimary: true }, take: 1 } }
+      },
+      images: true
+    },
+    orderBy: { createdAt: 'desc' }
+  });
+
+  res.json({ success: true, data: reviews });
+}));
 
 // Create review
-router.post('/', authenticate, async (req, res) => {
-  try {
-    const userId = (req as any).user._id;
-    const { productId, rating, comment } = req.body;
+router.post('/', authenticate, asyncHandler(async (req: AuthRequest, res) => {
+  const { productId, rating, title, content, orderId } = req.body;
 
-    // Check if user has purchased this product
-    const order = await Order.findOne({
-      user: userId,
-      'items.product': productId,
-      status: 'delivered'
-    });
+  // Check if user has already reviewed this product
+  const existingReview = await prisma.review.findFirst({
+    where: { userId: req.user!.id, productId }
+  });
 
-    const verifiedPurchase = !!order;
-
-    const review = new Review({
-      user: userId,
-      product: productId,
-      rating,
-      comment,
-      verifiedPurchase
-    });
-
-    await review.save();
-    res.status(201).json(review);
-  } catch (error) {
-    res.status(400).json({ error: 'Failed to create review' });
+  if (existingReview) {
+    throw ApiError.conflict('You have already reviewed this product');
   }
-});
+
+  // Check if user has purchased this product (optional verification)
+  let isVerifiedPurchase = false;
+  if (orderId) {
+    const order = await prisma.order.findFirst({
+      where: {
+        id: orderId,
+        userId: req.user!.id,
+        status: 'delivered',
+        items: { some: { productId } }
+      }
+    });
+    isVerifiedPurchase = !!order;
+  }
+
+  const review = await prisma.review.create({
+    data: {
+      userId: req.user!.id,
+      productId,
+      orderId,
+      rating,
+      title,
+      content,
+      isVerifiedPurchase
+    },
+    include: {
+      user: { select: { id: true, name: true, avatarUrl: true } }
+    }
+  });
+
+  res.status(201).json({ success: true, data: review });
+}));
 
 // Update review
-router.put('/:id', authenticate, async (req, res) => {
-  try {
-    const userId = (req as any).user._id;
-    const review = await Review.findOneAndUpdate(
-      { _id: req.params.id, user: userId },
-      req.body,
-      { new: true }
-    );
+router.put('/:id', authenticate, asyncHandler(async (req: AuthRequest, res) => {
+  const { rating, title, content } = req.body;
 
-    if (!review) {
-      return res.status(404).json({ error: 'Review not found' });
-    }
+  const review = await prisma.review.updateMany({
+    where: { id: req.params.id, userId: req.user!.id },
+    data: { rating, title, content }
+  });
 
-    res.json(review);
-  } catch (error) {
-    res.status(400).json({ error: 'Failed to update review' });
+  if (review.count === 0) {
+    throw ApiError.notFound('Review not found');
   }
-});
+
+  const updatedReview = await prisma.review.findUnique({
+    where: { id: req.params.id },
+    include: {
+      user: { select: { id: true, name: true, avatarUrl: true } }
+    }
+  });
+
+  res.json({ success: true, data: updatedReview });
+}));
 
 // Delete review
-router.delete('/:id', authenticate, async (req, res) => {
-  try {
-    const userId = (req as any).user._id;
-    const review = await Review.findOneAndDelete({ _id: req.params.id, user: userId });
+router.delete('/:id', authenticate, asyncHandler(async (req: AuthRequest, res) => {
+  const review = await prisma.review.deleteMany({
+    where: { id: req.params.id, userId: req.user!.id }
+  });
 
-    if (!review) {
-      return res.status(404).json({ error: 'Review not found' });
-    }
-
-    res.json({ message: 'Review deleted successfully' });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to delete review' });
+  if (review.count === 0) {
+    throw ApiError.notFound('Review not found');
   }
-});
+
+  res.json({ success: true, message: 'Review deleted successfully' });
+}));
 
 export default router;
