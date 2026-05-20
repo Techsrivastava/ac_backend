@@ -48,43 +48,33 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Create product (admin only)
-router.post('/', authenticate, authorize('admin', 'super_admin'), upload.array('images', 5), async (req: AuthRequest, res) => {
+// Create product (admin only) - accepts JSON body
+router.post('/', authenticate, authorize('admin', 'super_admin'), async (req: AuthRequest, res) => {
   try {
-    const imagePaths = req.files ? (req.files as Express.Multer.File[]).map(file => `/uploads/${file.filename}`) : [];
-    const existingImages = req.body.images ? JSON.parse(req.body.images) : [];
-    
     const productData = {
       ...req.body,
-      images: [...existingImages, ...imagePaths].length > 0 ? [...existingImages, ...imagePaths] : ['/placeholder.png']
+      images: req.body.images?.length > 0 ? req.body.images : ['/placeholder.png']
     };
-    
     const product = new Product(productData);
     await product.save();
     res.status(201).json(product);
-  } catch (error) {
-    res.status(500).json({ error: 'Server error' });
+  } catch (error: any) {
+    console.error('Create product error:', error?.message);
+    res.status(500).json({ error: error?.message || 'Server error' });
   }
 });
 
-// Update product (admin only)
-router.put('/:id', authenticate, authorize('admin', 'super_admin'), upload.array('images', 5), async (req: AuthRequest, res) => {
+// Update product (admin only) - accepts JSON body
+router.put('/:id', authenticate, authorize('admin', 'super_admin'), async (req: AuthRequest, res) => {
   try {
-    const updateData: any = { ...req.body };
-    
-    if (req.files && (req.files as Express.Multer.File[]).length > 0) {
-      const imagePaths = (req.files as Express.Multer.File[]).map(file => `/uploads/${file.filename}`);
-      const existingImages = req.body.images ? JSON.parse(req.body.images) : [];
-      updateData.images = [...existingImages, ...imagePaths];
-    }
-    
-    const product = await Product.findByIdAndUpdate(req.params.id, updateData, { new: true });
+    const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
     if (!product) {
       return res.status(404).json({ error: 'Product not found' });
     }
     res.json(product);
-  } catch (error) {
-    res.status(500).json({ error: 'Server error' });
+  } catch (error: any) {
+    console.error('Update product error:', error?.message);
+    res.status(500).json({ error: error?.message || 'Server error' });
   }
 });
 

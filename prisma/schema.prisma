@@ -1,0 +1,406 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(uuid())
+  email       String   @unique
+  password    String
+  name        String
+  role        UserRole @default(customer)
+  phone       String?
+  avatarUrl   String?  @map("avatar_url")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  blogs       Blog[]
+  orders      Order[]
+  reviews     Review[]
+  wishlists   Wishlist[]
+  activityLogs ActivityLog[]
+  media       Media[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  super_admin
+  admin
+  customer
+}
+
+model Category {
+  id          String    @id @default(uuid())
+  name        String
+  slug        String    @unique
+  description String?
+  imageUrl    String?   @map("image_url")
+  parentId    String?   @map("parent_id")
+  sortOrder   Int       @default(0) @map("sort_order")
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  parent      Category? @relation("CategoryParent", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryParent")
+  products    Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id                   String   @id @default(uuid())
+  name                 String
+  slug                 String   @unique
+  description          String?
+  shortDescription     String?  @map("short_description")
+  brand                String
+  categoryId           String   @map("category_id")
+  price                Decimal  @db.Decimal(10, 2)
+  discountPrice        Decimal? @map("discount_price") @db.Decimal(10, 2)
+  stockQuantity        Int      @default(0) @map("stock_quantity")
+  sku                  String   @unique
+  type                 ProductType @default(split)
+  coolingCapacity      String   @map("cooling_capacity")
+  energyRating         Int      @map("energy_rating")
+  warranty             String
+  installationCharges  Decimal  @default(0) @map("installation_charges") @db.Decimal(10, 2)
+  isFeatured           Boolean  @default(false) @map("is_featured")
+  isActive             Boolean  @default(true) @map("is_active")
+  weightKg             Decimal? @map("weight_kg") @db.Decimal(8, 2)
+  dimensions           String?
+  metaTitle            String?  @map("meta_title")
+  metaDescription      String?  @map("meta_description")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  category         Category          @relation(fields: [categoryId], references: [id])
+  images           ProductImage[]
+  specifications   ProductSpecification[]
+  features         ProductFeature[]
+  orderItems       OrderItem[]
+  reviews          Review[]
+  wishlists        Wishlist[]
+
+  @@map("products")
+}
+
+enum ProductType {
+  split
+  window
+  inverter
+  portable
+  commercial
+  accessories
+}
+
+model ProductImage {
+  id         String  @id @default(uuid())
+  productId  String  @map("product_id")
+  imageUrl   String  @map("image_url")
+  altText    String? @map("alt_text")
+  sortOrder  Int     @default(0) @map("sort_order")
+  isPrimary  Boolean @default(false) @map("is_primary")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  product    Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_images")
+}
+
+model ProductSpecification {
+  id        String @id @default(uuid())
+  productId String @map("product_id")
+  specKey   String @map("spec_key")
+  specValue String @map("spec_value")
+  specGroup String @default("General") @map("spec_group")
+  sortOrder Int    @default(0) @map("sort_order")
+
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_specifications")
+}
+
+model ProductFeature {
+  id          String @id @default(uuid())
+  productId   String @map("product_id")
+  featureText String @map("feature_text")
+  sortOrder   Int    @default(0) @map("sort_order")
+
+  product     Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_features")
+}
+
+model Blog {
+  id              String     @id @default(uuid())
+  title           String
+  slug            String     @unique
+  excerpt         String?
+  content         String?
+  featuredImageUrl String?   @map("featured_image_url")
+  authorId        String     @map("author_id")
+  category        String     @default("AC Tips")
+  tags            String[]
+  status          BlogStatus @default(draft)
+  isFeatured      Boolean    @default(false) @map("is_featured")
+  viewCount       Int        @default(0) @map("view_count")
+  metaTitle       String?    @map("meta_title")
+  metaDescription String?    @map("meta_description")
+  publishedAt     DateTime?  @map("published_at")
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+
+  author          User       @relation(fields: [authorId], references: [id])
+  images          BlogImage[]
+
+  @@map("blogs")
+}
+
+enum BlogStatus {
+  draft
+  published
+}
+
+model BlogImage {
+  id        String  @id @default(uuid())
+  blogId    String  @map("blog_id")
+  imageUrl  String  @map("image_url")
+  caption   String?
+  sortOrder Int     @default(0) @map("sort_order")
+
+  blog      Blog    @relation(fields: [blogId], references: [id], onDelete: Cascade)
+
+  @@map("blog_images")
+}
+
+model Order {
+  id              String      @id @default(uuid())
+  orderNumber     String      @unique @map("order_number")
+  userId          String?     @map("user_id")
+  customerEmail   String      @map("customer_email")
+  customerPhone   String      @map("customer_phone")
+  customerName    String      @map("customer_name")
+  shippingAddress Json        @map("shipping_address")
+  billingAddress  Json        @map("billing_address")
+  subtotal        Decimal     @db.Decimal(10, 2)
+  discountAmount  Decimal     @default(0) @map("discount_amount") @db.Decimal(10, 2)
+  taxAmount       Decimal     @default(0) @map("tax_amount") @db.Decimal(10, 2)
+  shippingAmount  Decimal     @default(0) @map("shipping_amount") @db.Decimal(10, 2)
+  totalAmount     Decimal     @db.Decimal(10, 2)
+  status          OrderStatus @default(pending)
+  paymentStatus   PaymentStatus @default(pending) @map("payment_status")
+  paymentMethod   String?     @map("payment_method")
+  trackingNumber  String?     @map("tracking_number")
+  notes           String?
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  user            User?       @relation(fields: [userId], references: [id])
+  items           OrderItem[]
+
+  @@map("orders")
+}
+
+enum OrderStatus {
+  pending
+  confirmed
+  shipped
+  delivered
+  cancelled
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  failed
+  refunded
+}
+
+model OrderItem {
+  id            String  @id @default(uuid())
+  orderId       String  @map("order_id")
+  productId     String  @map("product_id")
+  productName   String  @map("product_name")
+  productSku    String  @map("product_sku")
+  quantity      Int
+  unitPrice     Decimal @map("unit_price") @db.Decimal(10, 2)
+  totalPrice    Decimal @map("total_price") @db.Decimal(10, 2)
+
+  order         Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product       Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+
+model Review {
+  id                  String  @id @default(uuid())
+  productId           String  @map("product_id")
+  userId              String  @map("user_id")
+  orderId             String? @map("order_id")
+  rating              Int
+  title               String?
+  content             String?
+  isVerifiedPurchase  Boolean @default(false) @map("is_verified_purchase")
+  isApproved          Boolean @default(false) @map("is_approved")
+  helpfulCount        Int     @default(0) @map("helpful_count")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  product             Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user                User    @relation(fields: [userId], references: [id])
+  images              ReviewImage[]
+
+  @@map("reviews")
+}
+
+model ReviewImage {
+  id        String @id @default(uuid())
+  reviewId  String @map("review_id")
+  imageUrl  String @map("image_url")
+
+  review    Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@map("review_images")
+}
+
+model Wishlist {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  productId String   @map("product_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@map("wishlists")
+}
+
+model Coupon {
+  id                  String      @id @default(uuid())
+  code                String      @unique
+  type                CouponType
+  value               Decimal     @db.Decimal(10, 2)
+  minOrderAmount      Decimal?    @map("min_order_amount") @db.Decimal(10, 2)
+  maxDiscountAmount   Decimal?    @map("max_discount_amount") @db.Decimal(10, 2)
+  usageLimit          Int         @map("usage_limit")
+  usageCount          Int         @default(0) @map("usage_count")
+  startDate           DateTime    @map("start_date")
+  endDate             DateTime    @map("end_date")
+  isActive            Boolean     @default(true) @map("is_active")
+  applicableCategories String[]   @map("applicable_categories")
+  applicableProducts  String[]   @map("applicable_products")
+  createdAt           DateTime    @default(now()) @map("created_at")
+  updatedAt           DateTime    @updatedAt @map("updated_at")
+
+  @@map("coupons")
+}
+
+enum CouponType {
+  percentage
+  fixed_amount
+  free_shipping
+}
+
+model Pincode {
+  id              String   @id @default(uuid())
+  pincode         String   @unique
+  city            String
+  state           String
+  country         String   @default("Portugal")
+  isServiceable   Boolean  @default(true) @map("is_serviceable")
+  deliveryDays    Int      @default(3) @map("delivery_days")
+  shippingCharge  Decimal  @default(0) @map("shipping_charge") @db.Decimal(10, 2)
+
+  @@map("pincodes")
+}
+
+model SiteSetting {
+  id          String @id @default(uuid())
+  key         String @unique
+  value       String
+  type        SettingType @default(string)
+  group       String @default("general")
+  label       String
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("site_settings")
+}
+
+enum SettingType {
+  string
+  number
+  boolean
+  json
+  image
+}
+
+model HomepageSection {
+  id          String @id @default(uuid())
+  sectionType String @map("section_type")
+  title       String?
+  subtitle    String?
+  content     Json?
+  images      Json?
+  sortOrder   Int    @default(0) @map("sort_order")
+  isActive    Boolean @default(true) @map("is_active")
+  settings    Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("homepage_sections")
+}
+
+model Menu {
+  id    String @id @default(uuid())
+  name  String @unique
+  items Json
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("menus")
+}
+
+model Media {
+  id           String   @id @default(uuid())
+  filename     String
+  originalName String   @map("original_name")
+  mimeType     String   @map("mime_type")
+  sizeBytes    Int      @map("size_bytes")
+  url          String
+  thumbnailUrl String?  @map("thumbnail_url")
+  altText      String?  @map("alt_text")
+  folder       String   @default("general")
+  uploadedBy   String?  @map("uploaded_by")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  uploader     User?    @relation(fields: [uploadedBy], references: [id])
+
+  @@map("media")
+}
+
+model ActivityLog {
+  id          String   @id @default(uuid())
+  userId      String?  @map("user_id")
+  action      String
+  entityType  String   @map("entity_type")
+  entityId    String   @map("entity_id")
+  oldValues   Json?    @map("old_values")
+  newValues   Json?    @map("new_values")
+  ipAddress   String?  @map("ip_address")
+  userAgent   String?  @map("user_agent")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user        User?    @relation(fields: [userId], references: [id])
+
+  @@map("activity_logs")
+}

@@ -10,9 +10,11 @@ router.get('/', async (req, res) => {
   try {
     const { status, category, featured, search, page = 1, limit = 10 } = req.query;
     
-    const query: any = { status: 'published' };
+    const query: any = {};
     
-    if (status && req.query.admin === 'true') {
+    if (req.query.admin !== 'true') {
+      query.status = 'published';
+    } else if (status) {
       query.status = status;
     }
     if (category) query.category = category;
