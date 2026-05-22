@@ -25,13 +25,20 @@
     "strictPropertyInitialization": false
   },
   "include": [
-    "*.ts",
-    "routes/**/*.ts",
-    "models/**/*.ts",
-    "middleware/**/*.ts"
+    "index.ts",
+    "prisma.config.ts",
+    "src/**/*.ts",
+    "routes/*.ts",
+    "routes/v2/**/*.ts"
   ],
   "exclude": [
     "node_modules",
-    "dist"
+    "dist",
+    "models",
+    "seed.ts",
+    "routes/auth.ts",
+    "routes/categories.ts",
+    "routes/products.ts",
+    "routes/blogs.ts"
   ]
 }

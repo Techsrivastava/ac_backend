@@ -114,6 +114,12 @@ process.on('SIGINT', async () => {
   process.exit(0);
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT} in ${env.NODE_ENV} mode`);
+app.listen(PORT, async () => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    console.log(`Server running on port ${PORT} in ${env.NODE_ENV} mode`);
+    console.log('Database connected successfully');
+  } catch (error) {
+    console.error('Database connection failed:', error);
+  }
 });
