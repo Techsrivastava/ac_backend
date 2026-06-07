@@ -1,32 +1,35 @@
 import { PrismaClient, UserRole, ProductType, BlogStatus, OrderStatus, PaymentStatus, CouponType, HomepageSection } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('🌱 Starting database seed...');
 
-  // Clean existing data (optional - comment out if you want to keep data)
-  // await prisma.activityLog.deleteMany();
-  // await prisma.media.deleteMany();
-  // await prisma.homepageSection.deleteMany();
-  // await prisma.menu.deleteMany();
-  // await prisma.siteSetting.deleteMany();
-  // await prisma.wishlist.deleteMany();
-  // await prisma.reviewImage.deleteMany();
-  // await prisma.review.deleteMany();
-  // await prisma.orderItem.deleteMany();
-  // await prisma.order.deleteMany();
-  // await prisma.coupon.deleteMany();
-  // await prisma.pincode.deleteMany();
-  // await prisma.blogImage.deleteMany();
-  // await prisma.blog.deleteMany();
-  // await prisma.productFeature.deleteMany();
-  // await prisma.productSpecification.deleteMany();
-  // await prisma.productImage.deleteMany();
-  // await prisma.product.deleteMany();
-  // await prisma.category.deleteMany();
-  // await prisma.user.deleteMany();
+  // Clean existing data
+  await prisma.activityLog.deleteMany();
+  await prisma.media.deleteMany();
+  await prisma.homepageSection.deleteMany();
+  await prisma.menu.deleteMany();
+  await prisma.siteSetting.deleteMany();
+  await prisma.wishlist.deleteMany();
+  await prisma.reviewImage.deleteMany();
+  await prisma.review.deleteMany();
+  await prisma.orderItem.deleteMany();
+  await prisma.order.deleteMany();
+  await prisma.coupon.deleteMany();
+  await prisma.pincode.deleteMany();
+  await prisma.blogImage.deleteMany();
+  await prisma.blog.deleteMany();
+  await prisma.productFeature.deleteMany();
+  await prisma.productSpecification.deleteMany();
+  await prisma.productImage.deleteMany();
+  await prisma.product.deleteMany();
+  await prisma.category.deleteMany();
+  await prisma.user.deleteMany();
 
   // Create Super Admin
   const superAdminPassword = await bcrypt.hash('superadmin123', 10);
