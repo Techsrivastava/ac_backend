@@ -4,8 +4,8 @@ import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import sharp from 'sharp';
 import fs from 'fs/promises';
-import { prisma } from '../../lib/prisma.js';
-import { authenticate } from '../../middleware/auth.js';
+import { prisma } from '../../src/lib/prisma.js';
+import { authenticate } from '../../src/middleware/auth.js';
 
 const router = Router();
 
