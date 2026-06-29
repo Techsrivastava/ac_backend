@@ -190,7 +190,7 @@ router.post('/', authenticate, authorize('admin', 'super_admin'), async (req: an
         excerpt,
         content,
         featuredImageUrl,
-        authorId: req.user.userId,
+        authorId: req.user.id,
         category,
         tags: tags || [],
         status,

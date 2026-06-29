@@ -93,7 +93,7 @@ router.post('/', authenticate, upload.single('image'), async (req: any, res) => 
         url,
         thumbnailUrl,
         folder,
-        uploadedBy: req.user.userId,
+        uploadedBy: req.user.id,
       },
     });
 
@@ -136,7 +136,7 @@ router.post('/multiple', authenticate, upload.array('images', 10), async (req: a
           url,
           thumbnailUrl,
           folder,
-          uploadedBy: req.user.userId,
+          uploadedBy: req.user.id,
         },
       });
 

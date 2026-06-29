@@ -85,7 +85,7 @@ router.post('/login', async (req, res) => {
 router.get('/me', authenticate, async (req: any, res) => {
   try {
     const user = await prisma.user.findUnique({
-      where: { id: req.user.userId },
+      where: { id: req.user.id },
       select: { id: true, email: true, name: true, role: true, phone: true, avatarUrl: true, createdAt: true },
     });
 
@@ -105,7 +105,7 @@ router.put('/profile', authenticate, async (req: any, res) => {
     const { name, phone, avatarUrl } = req.body;
 
     const user = await prisma.user.update({
-      where: { id: req.user.userId },
+      where: { id: req.user.id },
       data: { name, phone, avatarUrl },
       select: { id: true, email: true, name: true, role: true, phone: true, avatarUrl: true },
     });
@@ -121,7 +121,7 @@ router.put('/change-password', authenticate, async (req: any, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
 
-    const user = await prisma.user.findUnique({ where: { id: req.user.userId } });
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -133,7 +133,7 @@ router.put('/change-password', authenticate, async (req: any, res) => {
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     await prisma.user.update({
-      where: { id: req.user.userId },
+      where: { id: req.user.id },
       data: { password: hashedPassword },
     });
 
