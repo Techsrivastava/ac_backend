@@ -26,6 +26,9 @@ import pincodeRoutes from './routes/pincodes.js';
 const app = express();
 const PORT = env.PORT;
 
+// Trust proxy for rate limiting behind Railway's load balancer
+app.set('trust proxy', 1);
+
 // Security middleware
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
@@ -35,8 +38,7 @@ app.use(helmet({
 app.use(cors({
   origin: [env.CLIENT_URL, 'http://localhost:3000', 'http://localhost:5173', 'https://becoolheating.com', 'https://www.becoolheating.com'],
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
 }));
 
 // Rate limiting
