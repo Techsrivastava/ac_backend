@@ -103,8 +103,11 @@ router.get('/', async (req, res) => {
 // Get single product (public)
 router.get('/:slug', async (req, res) => {
   try {
+    // Check if the slug is actually a UUID (this helps if the frontend sends an ID)
+    const isUUID = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(req.params.slug);
+    
     const product = await prisma.product.findUnique({
-      where: { slug: req.params.slug },
+      where: isUUID ? { id: req.params.slug } : { slug: req.params.slug },
       include: {
         category: true,
         images: { orderBy: { sortOrder: 'asc' } },
