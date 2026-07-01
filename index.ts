@@ -22,6 +22,7 @@ import couponRoutes from './routes/coupons.js';
 import wishlistRoutes from './routes/wishlist.js';
 import reviewRoutes from './routes/reviews.js';
 import pincodeRoutes from './routes/pincodes.js';
+import adminRoutes from './routes/v2/admin.js';
 
 const app = express();
 const PORT = env.PORT;
@@ -76,6 +77,7 @@ app.use('/api/coupons', couponRoutes);
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/pincodes', pincodeRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check endpoint
 app.get('/api/health', async (req, res) => {
