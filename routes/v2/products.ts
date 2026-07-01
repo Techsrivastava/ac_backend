@@ -198,23 +198,23 @@ router.post('/', authenticate, authorize('admin', 'super_admin'), async (req: an
         metaDescription,
         images: images?.length > 0 ? {
           create: images.map((img: any, idx: number) => ({
-            imageUrl: img.url || img,
-            altText: img.altText || name,
+            imageUrl: typeof img === 'string' ? img : (img.url || img.imageUrl || ''),
+            altText: typeof img === 'string' ? name : (img.altText || name || ''),
             isPrimary: idx === 0,
             sortOrder: idx,
           })),
         } : undefined,
         specifications: specifications?.length > 0 ? {
           create: specifications.map((spec: any, idx: number) => ({
-            specKey: spec.key,
-            specValue: spec.value,
-            specGroup: spec.group || 'General',
+            specKey: spec.key || spec.specKey || '',
+            specValue: spec.value || spec.specValue || '',
+            specGroup: spec.group || spec.specGroup || 'General',
             sortOrder: idx,
           })),
         } : undefined,
         features: features?.length > 0 ? {
-          create: features.map((feat: string, idx: number) => ({
-            featureText: feat,
+          create: features.map((feat: any, idx: number) => ({
+            featureText: typeof feat === 'string' ? feat : (feat.featureText || ''),
             sortOrder: idx,
           })),
         } : undefined,
@@ -265,23 +265,23 @@ router.put('/:id', authenticate, authorize('admin', 'super_admin'), async (req: 
         ...updateData,
         images: images?.length > 0 ? {
           create: images.map((img: any, idx: number) => ({
-            imageUrl: img.url || img,
-            altText: img.altText || updateData.name,
+            imageUrl: typeof img === 'string' ? img : (img.url || img.imageUrl || ''),
+            altText: typeof img === 'string' ? updateData.name : (img.altText || updateData.name || ''),
             isPrimary: idx === 0,
             sortOrder: idx,
           })),
         } : undefined,
         specifications: specifications?.length > 0 ? {
           create: specifications.map((spec: any, idx: number) => ({
-            specKey: spec.key,
-            specValue: spec.value,
-            specGroup: spec.group || 'General',
+            specKey: spec.key || spec.specKey || '',
+            specValue: spec.value || spec.specValue || '',
+            specGroup: spec.group || spec.specGroup || 'General',
             sortOrder: idx,
           })),
         } : undefined,
         features: features?.length > 0 ? {
-          create: features.map((feat: string, idx: number) => ({
-            featureText: feat,
+          create: features.map((feat: any, idx: number) => ({
+            featureText: typeof feat === 'string' ? feat : (feat.featureText || ''),
             sortOrder: idx,
           })),
         } : undefined,
