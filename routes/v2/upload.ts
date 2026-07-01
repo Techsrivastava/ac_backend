@@ -11,7 +11,7 @@ const router = Router();
 
 // Ensure upload directories exist
 const uploadDir = path.join(process.cwd(), 'uploads');
-const folders = ['products', 'blogs', 'categories', 'site', 'temp'];
+const folders = ['products', 'blogs', 'categories', 'site', 'temp', 'brands'];
 
 async function ensureDirectories() {
   for (const folder of folders) {
@@ -48,15 +48,18 @@ async function processImage(
 ) {
   const { width = 1200, height, quality = 80 } = options;
 
+  const targetDir = path.join(uploadDir, folder);
+  await fs.mkdir(targetDir, { recursive: true });
+
   // Original WebP
-  const originalPath = path.join(uploadDir, folder, `${filename}.webp`);
+  const originalPath = path.join(targetDir, `${filename}.webp`);
   await sharp(buffer)
     .resize(width, height, { fit: 'inside', withoutEnlargement: true })
     .webp({ quality })
     .toFile(originalPath);
 
   // Thumbnail
-  const thumbPath = path.join(uploadDir, folder, `${filename}-thumb.webp`);
+  const thumbPath = path.join(targetDir, `${filename}-thumb.webp`);
   await sharp(buffer)
     .resize(300, 300, { fit: 'cover' })
     .webp({ quality: 70 })
