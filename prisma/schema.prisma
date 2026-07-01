@@ -54,6 +54,20 @@ model Category {
   @@map("categories")
 }
 
+model Brand {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  slug        String   @unique
+  imageUrl    String?  @map("image_url")
+  color       String?  @default("bg-slate-900 text-white")
+  isActive    Boolean  @default(true) @map("is_active")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("brands")
+}
+
 model Product {
   id                   String   @id @default(uuid())
   name                 String

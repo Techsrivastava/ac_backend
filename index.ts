@@ -23,6 +23,7 @@ import wishlistRoutes from './routes/wishlist.js';
 import reviewRoutes from './routes/reviews.js';
 import pincodeRoutes from './routes/pincodes.js';
 import adminRoutes from './routes/v2/admin.js';
+import brandsRoutes from './routes/v2/brands.js';
 
 const app = express();
 const PORT = env.PORT;
