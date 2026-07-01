@@ -79,6 +79,7 @@ app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/pincodes', pincodeRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/brands', brandsRoutes);
 
 // Health check endpoint
 app.get('/api/health', async (req, res) => {
