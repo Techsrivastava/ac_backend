@@ -241,24 +241,51 @@ router.post('/', authenticate, authorize('admin', 'super_admin'), async (req: an
 router.put('/:id', authenticate, authorize('admin', 'super_admin'), async (req: any, res) => {
   try {
     const productId = req.params.id;
-    const updateData = req.body;
-
-    // Handle nested updates
-    const data: any = {
-      ...updateData,
-      images: undefined,
-      specifications: undefined,
-      features: undefined,
-    };
+    const { images, specifications, features, variants, ...updateData } = req.body;
 
     // Remove undefined values
-    Object.keys(data).forEach(key => {
-      if (data[key] === undefined) delete data[key];
+    Object.keys(updateData).forEach(key => {
+      if (updateData[key] === undefined) delete updateData[key];
     });
+
+    // Delete existing relations if we are updating them
+    if (images) {
+      await prisma.productImage.deleteMany({ where: { productId } });
+    }
+    if (specifications) {
+      await prisma.productSpecification.deleteMany({ where: { productId } });
+    }
+    if (features) {
+      await prisma.productFeature.deleteMany({ where: { productId } });
+    }
 
     const product = await prisma.product.update({
       where: { id: productId },
-      data,
+      data: {
+        ...updateData,
+        images: images?.length > 0 ? {
+          create: images.map((img: any, idx: number) => ({
+            imageUrl: img.url || img,
+            altText: img.altText || updateData.name,
+            isPrimary: idx === 0,
+            sortOrder: idx,
+          })),
+        } : undefined,
+        specifications: specifications?.length > 0 ? {
+          create: specifications.map((spec: any, idx: number) => ({
+            specKey: spec.key,
+            specValue: spec.value,
+            specGroup: spec.group || 'General',
+            sortOrder: idx,
+          })),
+        } : undefined,
+        features: features?.length > 0 ? {
+          create: features.map((feat: string, idx: number) => ({
+            featureText: feat,
+            sortOrder: idx,
+          })),
+        } : undefined,
+      },
       include: {
         category: true,
         images: true,
